@@ -25,6 +25,12 @@ resources:
     AuctionsBucket: ${file(resources/AuctionsBucket.yml):AuctionsBucket}
     AuctionsBucketPolicy: ${file(resources/AuctionsBucket.yml):AuctionsBucketPolicy}
 functions:
+  testFunction:
+    handler: src/handlers/testFunction.handler
+    events:
+      - http:
+          method: POST
+          path: test1
   createAuction:
     handler: src/handlers/createAuction.handler
     events:
