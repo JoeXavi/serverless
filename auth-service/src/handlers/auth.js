@@ -22,9 +22,6 @@ const generatePolicy = (principalId, methodArn) => {
 };
 
 export async function handler(event, context) {
-  console.log("Datos de AUTH0_PUBLIC_KEY");
-  console.log(process.env.AUTH0_PUBLIC_KEY);
-
   if (!event.authorizationToken) {
     throw 'Unauthorized';
   }
@@ -40,7 +37,7 @@ export async function handler(event, context) {
       context: claims
     };
   } catch (error) {
-    console.log(error);
+    console.log(`Error verify or generating policy: ${error}`);
     throw 'Unauthorized';
   }
 };
