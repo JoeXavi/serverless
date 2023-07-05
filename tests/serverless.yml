@@ -1,0 +1,68 @@
+service: my-service
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: us-east-2
+
+functions:
+  connect:
+    handler: handler.connect
+    events:
+      - websocket:
+          route: $connect
+
+  disconnect:
+    handler: handler.disconnect
+    events:
+      - websocket:
+          route: $disconnect
+
+  default:
+    handler: handler.default
+    events:
+      - websocket:
+          route: $default
+
+resources:
+  Resources:
+    WebsocketApi:
+      Type: AWS::ApiGatewayV2::Api
+      Properties:
+        Name: my-websocket-api
+
+    WebsocketDeployment:
+      Type: AWS::ApiGatewayV2::Deployment
+      Properties:
+        ApiId: !Ref WebsocketApi
+
+    WebsocketStage:
+      Type: AWS::ApiGatewayV2::Stage
+      Properties:
+        ApiId: !Ref WebsocketApi
+        DeploymentId: !Ref WebsocketDeployment
+        StageName: prod
+
+    WebsocketIntegrationConnect:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Ref WebsocketApi
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${connect.Arn}/invocations
+
+    WebsocketIntegrationDisconnect:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Ref WebsocketApi
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${disconnect.Arn}/invocations
+
+    WebsocketIntegrationDefault:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Ref WebsocketApi
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${default.Arn}/invocations
+
+Outputs:
+  WebSocketURI:
+    Value: !Sub "wss://${WebsocketApi}.execute-api.${AWS::Region}.amazonaws.com/prod"

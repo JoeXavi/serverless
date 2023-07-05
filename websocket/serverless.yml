@@ -1,0 +1,39 @@
+service: chatting
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  websocketsApiName: websocket-api
+  websocketsApiRouteSelectionExpression: $request.body.action # custom routes are selected by the value of the action property in the body
+  websocketsDescription: Custom websocket Serverless
+  environment:
+    TABLENAME: ${self:custom.tableName}-${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - ${file(iam/ConnectionsTableIAM.yml):ConnectionsTableIAM}
+
+functions:
+  websocket:
+    handler: src/handler/connection.handler
+    events:
+      - websocket:
+          route: $connect
+      - websocket:
+          route: $disconnect
+      - websocket:
+          route: message
+
+  # default:
+  #   handler: handler.default
+  #   events:
+  #     - websocket:
+  #         route: $default
+
+resources:
+  Resources:
+    ConnectionsTable: ${file(resources/ConnectionsTable.yml):ConnectionsTable}
+
+custom:
+  tableName: 'websocket'
