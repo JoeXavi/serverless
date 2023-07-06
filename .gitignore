@@ -1,2 +1,6 @@
 secret.pem
 .serverless/
+node_modules
+jspm_packages
+.serverless
+.webpack
