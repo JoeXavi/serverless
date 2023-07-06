@@ -7,31 +7,6 @@ import {
 const dynamoClient = new DynamoDBClient({ region: "us-east-1" });
 const dynamoDocument = DynamoDBDocumentClient.from(dynamoClient);
 
-import {
-        ApiGatewayManagementApiClient,
-        PostToConnectionCommand
- } from "@aws-sdk/client-apigatewaymanagementapi"
-
-const answerMessages = async(event, message, connectionId)=>{
-    const domain = event.requestContext.domainName;
-    const stage = event.requestContext.stage;
-    const callbackUrl = `https://${domain}/${stage}`;
-    const client = new ApiGatewayManagementApiClient({
-        region: "us-east-1",
-        apiVersion: "2018-11-29",
-        endpoint: callbackUrl
-    });
-    const requestParams = {
-        ConnectionId: connectionId,
-        Data: message,
-    };
-
-    const command = new PostToConnectionCommand(requestParams);
-    await client.send(command);
-    return true
-}
-
-
 export const handler = async (event, context) => {
     const { body, requestContext: { connectionId, routeKey } } = event;
 
@@ -57,10 +32,6 @@ export const handler = async (event, context) => {
                     },
                 })
             );
-        }
-
-        if (routeKey === "message") {
-            await answerMessages(event, "hey there", connectionId)
         }
 
         return { statusCode: 200, body: "OK" }

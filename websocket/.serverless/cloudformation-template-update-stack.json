@@ -71,10 +71,16 @@
         }
       }
     },
-    "WebsocketLogGroup": {
+    "ConnectionLogGroup": {
       "Type": "AWS::Logs::LogGroup",
       "Properties": {
-        "LogGroupName": "/aws/lambda/chatting-dev-websocket"
+        "LogGroupName": "/aws/lambda/chatting-dev-connection"
+      }
+    },
+    "MessageLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/chatting-dev-message"
       }
     },
     "IamRoleLambdaExecution": {
@@ -182,18 +188,18 @@
         }
       }
     },
-    "WebsocketLambdaFunction": {
+    "ConnectionLambdaFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/chatting/dev/1688421717275-2023-07-03T22:01:57.275Z/chatting.zip"
+          "S3Key": "serverless/chatting/dev/1688524239080-2023-07-05T02:30:39.080Z/chatting.zip"
         },
         "Handler": "src/handler/connection.handler",
         "Runtime": "nodejs18.x",
-        "FunctionName": "chatting-dev-websocket",
+        "FunctionName": "chatting-dev-connection",
         "MemorySize": 1024,
         "Timeout": 6,
         "Environment": {
@@ -209,17 +215,57 @@
         }
       },
       "DependsOn": [
-        "WebsocketLogGroup"
+        "ConnectionLogGroup"
       ]
     },
-    "WebsocketLambdaVersionGDrIdrnISQbVKH7Umuwrv4clPgYUtFHFZimYLbjuabI": {
+    "MessageLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/chatting/dev/1688524239080-2023-07-05T02:30:39.080Z/chatting.zip"
+        },
+        "Handler": "src/handler/message.handler",
+        "Runtime": "nodejs18.x",
+        "FunctionName": "chatting-dev-message",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "TABLENAME": "websocket-dev"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "MessageLogGroup"
+      ]
+    },
+    "ConnectionLambdaVersioniY0y22GGVtwkCvnSw37Xe5EAajo3ynF9Iv4gIZUxnxQ": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
-          "Ref": "WebsocketLambdaFunction"
+          "Ref": "ConnectionLambdaFunction"
         },
-        "CodeSha256": "XvCgeZBBSZXuGhh1pHHcyjXx0u5OBe+EgIDzJHdxPhM="
+        "CodeSha256": "UPjmWvAGbVg6f8YDeScoLwaKY4HZ6FNkpp5jGZ8D0Qk="
+      }
+    },
+    "MessageLambdaVersionShJbKaUxz9DXItRRfjl1iPr4IeMZf5alCqgGMKQoJA": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "MessageLambdaFunction"
+        },
+        "CodeSha256": "UPjmWvAGbVg6f8YDeScoLwaKY4HZ6FNkpp5jGZ8D0Qk="
       }
     },
     "WebsocketsApi": {
@@ -231,7 +277,7 @@
         "ProtocolType": "WEBSOCKET"
       }
     },
-    "WebsocketWebsocketsIntegration": {
+    "ConnectionWebsocketsIntegration": {
       "Type": "AWS::ApiGatewayV2::Integration",
       "Properties": {
         "ApiId": {
@@ -253,7 +299,7 @@
               ":lambda:path/2015-03-31/functions/",
               {
                 "Fn::GetAtt": [
-                  "WebsocketLambdaFunction",
+                  "ConnectionLambdaFunction",
                   "Arn"
                 ]
               },
@@ -263,16 +309,65 @@
         }
       }
     },
-    "WebsocketLambdaPermissionWebsockets": {
+    "MessageWebsocketsIntegration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "WebsocketsApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":apigateway:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":lambda:path/2015-03-31/functions/",
+              {
+                "Fn::GetAtt": [
+                  "MessageLambdaFunction",
+                  "Arn"
+                ]
+              },
+              "/invocations"
+            ]
+          ]
+        }
+      }
+    },
+    "ConnectionLambdaPermissionWebsockets": {
       "Type": "AWS::Lambda::Permission",
       "DependsOn": [
         "WebsocketsApi",
-        "WebsocketLambdaFunction"
+        "ConnectionLambdaFunction"
       ],
       "Properties": {
         "FunctionName": {
           "Fn::GetAtt": [
-            "WebsocketLambdaFunction",
+            "ConnectionLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com"
+      }
+    },
+    "MessageLambdaPermissionWebsockets": {
+      "Type": "AWS::Lambda::Permission",
+      "DependsOn": [
+        "WebsocketsApi",
+        "MessageLambdaFunction"
+      ],
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "MessageLambdaFunction",
             "Arn"
           ]
         },
@@ -294,7 +389,7 @@
             [
               "integrations",
               {
-                "Ref": "WebsocketWebsocketsIntegration"
+                "Ref": "ConnectionWebsocketsIntegration"
               }
             ]
           ]
@@ -315,7 +410,7 @@
             [
               "integrations",
               {
-                "Ref": "WebsocketWebsocketsIntegration"
+                "Ref": "ConnectionWebsocketsIntegration"
               }
             ]
           ]
@@ -336,7 +431,7 @@
             [
               "integrations",
               {
-                "Ref": "WebsocketWebsocketsIntegration"
+                "Ref": "MessageWebsocketsIntegration"
               }
             ]
           ]
@@ -352,11 +447,11 @@
         "StageName": "dev",
         "Description": "Custom websocket Serverless",
         "DeploymentId": {
-          "Ref": "WebsocketsDeploymentYMzu21OEuxJyw8mipUvQGdHDolW3VYxPvYcFpf0L94"
+          "Ref": "WebsocketsDeploymentu87lkfT23lcPG6PNHPGZRChSzCJoQeEbP2N3OUJs"
         }
       }
     },
-    "WebsocketsDeploymentYMzu21OEuxJyw8mipUvQGdHDolW3VYxPvYcFpf0L94": {
+    "WebsocketsDeploymentu87lkfT23lcPG6PNHPGZRChSzCJoQeEbP2N3OUJs": {
       "Type": "AWS::ApiGatewayV2::Deployment",
       "DependsOn": [
         "SconnectWebsocketsRoute",
@@ -399,13 +494,22 @@
         "Name": "sls-chatting-dev-ServerlessDeploymentBucketName"
       }
     },
-    "WebsocketLambdaFunctionQualifiedArn": {
+    "ConnectionLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "WebsocketLambdaVersionGDrIdrnISQbVKH7Umuwrv4clPgYUtFHFZimYLbjuabI"
+        "Ref": "ConnectionLambdaVersioniY0y22GGVtwkCvnSw37Xe5EAajo3ynF9Iv4gIZUxnxQ"
       },
       "Export": {
-        "Name": "sls-chatting-dev-WebsocketLambdaFunctionQualifiedArn"
+        "Name": "sls-chatting-dev-ConnectionLambdaFunctionQualifiedArn"
+      }
+    },
+    "MessageLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "MessageLambdaVersionShJbKaUxz9DXItRRfjl1iPr4IeMZf5alCqgGMKQoJA"
+      },
+      "Export": {
+        "Name": "sls-chatting-dev-MessageLambdaFunctionQualifiedArn"
       }
     },
     "ServiceEndpointWebsocket": {

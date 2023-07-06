@@ -15,13 +15,17 @@ provider:
         - ${file(iam/ConnectionsTableIAM.yml):ConnectionsTableIAM}
 
 functions:
-  websocket:
+  connection:
     handler: src/handler/connection.handler
     events:
       - websocket:
           route: $connect
       - websocket:
           route: $disconnect
+
+  message:
+    handler: src/handler/message.handler
+    events:
       - websocket:
           route: message
 
